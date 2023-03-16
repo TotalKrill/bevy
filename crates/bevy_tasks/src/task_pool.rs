@@ -113,7 +113,10 @@ pub struct TaskPool {
     executor: Arc<async_executor::Executor<'static>>,
 
     /// Inner state of the pool
+    #[cfg(not(target_arch = "wasm32"))]
     threads: Vec<JoinHandle<()>>,
+    #[cfg(target_arch = "wasm32")]
+    threads: Vec<crate::wasm_worker::WebWorkerJoinHandle>,
     shutdown_tx: async_channel::Sender<()>,
 }
 
@@ -141,6 +144,7 @@ impl TaskPool {
         let num_threads = builder
             .num_threads
             .unwrap_or_else(crate::available_parallelism);
+        println!("NUM THREADS: {:?}", num_threads);
 
         let threads = (0..num_threads)
             .map(|i| {
@@ -152,7 +156,13 @@ impl TaskPool {
                 } else {
                     format!("TaskPool ({i})")
                 };
+
+                #[cfg(not(target_arch = "wasm32"))]
                 let mut thread_builder = thread::Builder::new().name(thread_name);
+
+                #[cfg(target_arch = "wasm32")]
+                let mut thread_builder =
+                    crate::wasm_worker::WasmWorkerBuilder::new().name(thread_name);
 
                 if let Some(stack_size) = builder.stack_size {
                     thread_builder = thread_builder.stack_size(stack_size);

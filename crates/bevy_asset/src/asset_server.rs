@@ -529,7 +529,7 @@ impl AssetServer {
         let server = self.clone();
         let owned_path = asset_path.to_owned();
         IoTaskPool::get()
-            .spawn(async move {
+            .spawn_local(async move {
                 if let Err(err) = server.load_async(owned_path, force).await {
                     warn!("{}", err);
                 }
