@@ -48,8 +48,16 @@ const TEXT_COLOR: Color = Color::rgb(0.5, 0.5, 1.0);
 const SCORE_COLOR: Color = Color::rgb(1.0, 0.5, 0.5);
 
 fn main() {
+    use bevy::log::{Level, LogPlugin};
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.build()
+            .disable::<bevy::audio::AudioPlugin>()
+            .set(LogPlugin {
+                level: Level::DEBUG,
+                ..default()
+                // filter: "wgpu=error,bevy_render=info,bevy_ecs=trace".to_string(),
+            })
+        )
         .insert_resource(Scoreboard { score: 0 })
         .insert_resource(ClearColor(BACKGROUND_COLOR))
         .add_event::<CollisionEvent>()
@@ -68,7 +76,7 @@ fn main() {
                 play_collision_sound.after(check_for_collisions),
             ),
         )
-        .add_systems(Update, (update_scoreboard, bevy::window::close_on_esc))
+        .add_systems(Update, (logprint, update_scoreboard, bevy::window::close_on_esc))
         .run();
 }
 
@@ -171,6 +179,10 @@ struct Scoreboard {
     score: usize,
 }
 
+fn logprint() {
+    bevy::log::info!("still running");
+}
+
 // Add the game's entities to our world
 fn setup(
     mut commands: Commands,
@@ -181,7 +193,7 @@ fn setup(
     // Camera
     commands.spawn(Camera2dBundle::default());
 
-    // Sound
+    // // Sound
     let ball_collision_sound = asset_server.load("sounds/breakout_collision.ogg");
     commands.insert_resource(CollisionSound(ball_collision_sound));
 
@@ -407,10 +419,10 @@ fn play_collision_sound(
     if !collision_events.is_empty() {
         // This prevents events staying active on the next frame.
         collision_events.clear();
-        commands.spawn(AudioBundle {
-            source: sound.0.clone(),
-            // auto-despawn the entity when playback finishes
-            settings: PlaybackSettings::DESPAWN,
-        });
+        // commands.spawn(AudioBundle {
+        //     source: sound.0.clone(),
+        //     // auto-despawn the entity when playback finishes
+        //     settings: PlaybackSettings::DESPAWN,
+        // });
     }
 }
