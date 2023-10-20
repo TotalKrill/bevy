@@ -33,7 +33,7 @@ fn infotext_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         TextBundle::from_section(
             "This is\ntext with\nline breaks\nin the top left",
             TextStyle {
-                font: font.clone(),
+                font: font.clone().into(),
                 font_size: 50.0,
                 color: Color::WHITE,
             },
@@ -48,7 +48,7 @@ fn infotext_system(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn(TextBundle::from_section(
             "This text is very long, has a limited width, is centered, is positioned in the top right and is also colored pink.",
             TextStyle {
-                font: font.clone(),
+                font: font.clone().into(),
                 font_size: 50.0,
                 color: Color::rgb(0.8, 0.2, 0.7),
             },
@@ -67,7 +67,7 @@ fn infotext_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             TextSection::new(
                 "This text changes in the bottom right",
                 TextStyle {
-                    font: font.clone(),
+                    font: font.clone().into(),
                     font_size: 30.0,
                     color: Color::WHITE,
                 },
@@ -75,33 +75,33 @@ fn infotext_system(mut commands: Commands, asset_server: Res<AssetServer>) {
             TextSection::new(
                 "\nThis text changes in the bottom right - ",
                 TextStyle {
-                    font: font.clone(),
+                    font: font.clone().into(),
                     font_size: 30.0,
                     color: Color::RED,
                 },
             ),
             TextSection::from_style(TextStyle {
-                font: font.clone(),
+                font: font.clone().into(),
                 font_size: 30.0,
                 color: Color::ORANGE_RED,
             }),
             TextSection::new(
                 " fps, ",
                 TextStyle {
-                    font: font.clone(),
+                    font: font.clone().into(),
                     font_size: 30.0,
                     color: Color::YELLOW,
                 },
             ),
             TextSection::from_style(TextStyle {
-                font: font.clone(),
+                font: font.clone().into(),
                 font_size: 30.0,
                 color: Color::GREEN,
             }),
             TextSection::new(
                 " ms/frame",
                 TextStyle {
-                    font: font.clone(),
+                    font: font.clone().into(),
                     font_size: 30.0,
                     color: Color::BLUE,
                 },
@@ -119,7 +119,7 @@ fn infotext_system(mut commands: Commands, asset_server: Res<AssetServer>) {
         TextBundle::from_section(
             "This\ntext has\nline breaks and also a set width in the bottom left",
             TextStyle {
-                font,
+                font: font.into(),
                 font_size: 50.0,
                 color: Color::WHITE,
             },
