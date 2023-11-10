@@ -11,7 +11,7 @@ use bevy_render::{
 
 pub const WIREFRAME_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(192598014480025766);
 
-/// A [`Plugin`] that draws wireframes.
+/// A [`Plugin`] that draws 3D meshes as wireframes.
 ///
 /// Wireframes currently do not work when using webgl or webgpu.
 /// Supported rendering backends:
