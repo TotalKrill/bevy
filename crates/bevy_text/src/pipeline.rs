@@ -117,7 +117,7 @@ impl TextPipeline {
         // TODO: cache buffers (see Iced / glyphon)
         let mut buffer = Buffer::new_empty(metrics);
         let buffer_height = f32::INFINITY;
-        buffer.set_size(font_system, bounds.x.ceil(), buffer_height);
+        buffer.set_size(font_system, Some(bounds.x.ceil()), Some(buffer_height));
 
         buffer.set_wrap(
             font_system,
@@ -132,10 +132,10 @@ impl TextPipeline {
         let default_attrs = Attrs::new();
         buffer.set_rich_text(font_system, spans, default_attrs, Shaping::Advanced);
 
-        if buffer.visible_lines() == 0 {
-            // Presumably the font(s) are not available yet
-            return Err(TextError::NoSuchFont);
-        }
+        //if buffer.visible_lines() == 0 {
+        //    // Presumably the font(s) are not available yet
+        //    return Err(TextError::NoSuchFont);
+        //}
 
         Ok(buffer)
     }
@@ -272,8 +272,8 @@ impl TextPipeline {
 
             buffer.set_size(
                 font_system,
-                MAX_WIDTH_CONTENT_BOUNDS.x,
-                MAX_WIDTH_CONTENT_BOUNDS.y,
+                Some(MAX_WIDTH_CONTENT_BOUNDS.x),
+                Some(MAX_WIDTH_CONTENT_BOUNDS.y),
             );
 
             buffer_dimensions(&buffer)
@@ -324,7 +324,7 @@ impl TextMeasureInfo {
     pub fn compute_size(&self, bounds: Vec2) -> Vec2 {
         let font_system = &mut self.font_system.try_lock().expect("Failed to acquire lock");
         let mut buffer = self.buffer.lock().expect("Failed to acquire the lock");
-        buffer.set_size(font_system, bounds.x.ceil(), bounds.y.ceil());
+        buffer.set_size(font_system, Some(bounds.x.ceil()), Some(bounds.y.ceil()));
         buffer_dimensions(&buffer)
     }
 }
