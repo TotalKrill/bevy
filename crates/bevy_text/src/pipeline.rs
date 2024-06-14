@@ -11,8 +11,8 @@ use bevy_utils::HashMap;
 use cosmic_text::{Attrs, Buffer, Metrics, Shaping, Wrap};
 
 use crate::{
-    error::TextError, BreakLineOn, Font, FontAtlasSets, JustifyText, PositionedGlyph, TextSection,
-    YAxisOrientation,
+    error::TextError, BreakLineOn, CosmicBuffer, Font, FontAtlasSets, JustifyText, PositionedGlyph,
+    TextSection, YAxisOrientation,
 };
 
 /// A wrapper around a [`cosmic_text::FontSystem`]
@@ -140,6 +140,84 @@ impl TextPipeline {
         Ok(buffer)
     }
 
+    /// Utilizes a cached [cosmic_text::Buffer] to shape and layout text
+    pub fn update_buffer(
+        &mut self,
+        fonts: &Assets<Font>,
+        sections: &[TextSection],
+        linebreak_behavior: BreakLineOn,
+        bounds: Vec2,
+        scale_factor: f64,
+        buffer: &mut CosmicBuffer,
+    ) -> Result<(), TextError> {
+        // TODO: Support multiple section font sizes, pending upstream implementation in cosmic_text
+        // For now, just use the first section's size or a default
+        let font_size = sections
+            .get(0)
+            .map(|s| s.style.font_size)
+            .unwrap_or_else(|| crate::TextStyle::default().font_size)
+            as f64
+            * scale_factor;
+
+        // TODO: Support line height as an option. Unitless `1.2` is the default used in browsers (1.2x font size).
+        let line_height = font_size * 1.2;
+        let (font_size, line_height) = (font_size as f32, line_height as f32);
+        // TODO: maybe we would like to render negative fontsizes or scaling upside down or something?
+        let metrics = Metrics::new(font_size.max(0.000001), line_height.max(0.000001));
+
+        let font_system = &mut acquire_font_system(&mut self.font_system)?;
+
+        // return early if the fonts are not loaded yet
+        for section in sections {
+            fonts
+                .get(section.style.font.id())
+                .ok_or(TextError::NoSuchFont)?;
+        }
+
+        let spans: Vec<(&str, Attrs)> = sections
+            .iter()
+            .enumerate()
+            .map(|(section_index, section)| {
+                (
+                    &section.value[..],
+                    get_attrs(
+                        section,
+                        section_index,
+                        font_system,
+                        &mut self.map_handle_to_font_id,
+                        fonts,
+                    ),
+                )
+            })
+            .collect();
+
+        buffer.set_metrics(font_system, metrics);
+        let buffer_height = f32::INFINITY;
+        buffer.set_size(font_system, Some(bounds.x.ceil()), Some(buffer_height));
+
+        buffer.set_wrap(
+            font_system,
+            match linebreak_behavior {
+                BreakLineOn::WordBoundary => Wrap::Word,
+                BreakLineOn::AnyCharacter => Wrap::Glyph,
+                BreakLineOn::NoWrap => Wrap::None,
+            },
+        );
+
+        // TODO: other shaping methods?
+        let default_attrs = Attrs::new();
+        buffer.set_rich_text(font_system, spans, default_attrs, Shaping::Advanced);
+
+        // TODO: Reimplement this functionality with new API
+        //
+        //if buffer.visible_lines() == 0 {
+        //    // Presumably the font(s) are not available yet
+        //    return Err(TextError::NoSuchFont);
+        //}
+
+        Ok(())
+    }
+
     /// Queues text for rendering
     ///
     /// Produces a [`TextLayoutInfo`], containing [`PositionedGlyph`]s
@@ -158,13 +236,20 @@ impl TextPipeline {
         texture_atlases: &mut Assets<TextureAtlasLayout>,
         textures: &mut Assets<Image>,
         y_axis_orientation: YAxisOrientation,
+        buffer: &mut CosmicBuffer,
     ) -> Result<TextLayoutInfo, TextError> {
         if sections.is_empty() {
             return Ok(TextLayoutInfo::default());
         }
 
-        let buffer =
-            self.create_buffer(fonts, sections, linebreak_behavior, bounds, scale_factor)?;
+        self.update_buffer(
+            fonts,
+            sections,
+            linebreak_behavior,
+            bounds,
+            scale_factor,
+            buffer,
+        )?;
 
         let font_system = &mut acquire_font_system(&mut self.font_system)?;
         let swash_cache = &mut self.swash_cache.0;

@@ -1,8 +1,10 @@
 use bevy_asset::Handle;
 use bevy_color::Color;
+use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{prelude::Component, reflect::ReflectComponent};
 use bevy_reflect::prelude::*;
 use bevy_utils::default;
+use cosmic_text::{Buffer, Metrics};
 use serde::{Deserialize, Serialize};
 
 use crate::Font;
@@ -11,6 +13,16 @@ pub use cosmic_text::{
     self, FamilyOwned as FontFamily, Stretch as FontStretch, Style as FontStyle,
     Weight as FontWeight,
 };
+
+/// Component wrapper for a cosmic-text [`Buffer`]
+#[derive(Component, Deref, DerefMut, Clone, Debug)]
+pub struct CosmicBuffer(pub Buffer);
+
+impl Default for CosmicBuffer {
+    fn default() -> Self {
+        Self(Buffer::new_empty(Metrics::new(12., 12. * 1.2)))
+    }
+}
 
 /// A component that is the entry point for rendering text.
 ///
