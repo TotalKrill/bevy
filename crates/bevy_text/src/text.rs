@@ -8,7 +8,6 @@ use cosmic_text::{Buffer, Metrics};
 use serde::{Deserialize, Serialize};
 
 use crate::Font;
-// TODO: reexport cosmic_text and these types in the prelude
 pub use cosmic_text::{
     self, FamilyOwned as FontFamily, Stretch as FontStretch, Style as FontStyle,
     Weight as FontWeight,

@@ -38,10 +38,9 @@ impl DynamicTextureAtlasBuilder {
     ///
     /// # Arguments
     ///
-    /// * `altas_layout` - The atlas to add the texture to
-    /// * `textures` - The texture assets container
-    /// * `texture` - The new texture to add to the atlas
-    /// * `atlas_texture_handle` - The atlas texture to edit
+    /// * `altas_layout` - The atlas layout to add the texture to.
+    /// * `texture` - The source texture to add to the atlas.
+    /// * `atlas_texture` - The destination atlas texture to copy the source texture to.
     pub fn add_texture(
         &mut self,
         atlas_layout: &mut TextureAtlasLayout,
@@ -54,7 +53,7 @@ impl DynamicTextureAtlasBuilder {
             (texture.height() + self.padding).try_into().unwrap(),
         ));
         if let Some(allocation) = allocation {
-            let atlas_texture = textures.get_mut(atlas_texture_handle).unwrap();
+            let atlas_texture = textures.get_mut(atlas_texture_handle)?;
             assert!(
                 <GpuImage as RenderAsset>::asset_usage(atlas_texture)
                     .contains(RenderAssetUsages::MAIN_WORLD),

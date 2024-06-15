@@ -59,6 +59,17 @@ impl FontAtlas {
         self.glyph_to_atlas_index.contains_key(&cache_key)
     }
 
+    /// Add a glyph to the atlas, updating both its texture and layout.
+    ///
+    /// The glyph is represented by `glyph`, and its image content is `glyph_texture`.
+    /// This content is copied into the atlas texture, and the atlas layout is updated
+    /// to store the location of that glyph into the atlas.
+    ///
+    /// # Returns
+    ///
+    /// Returns `true` if the glyph is successfully added, or `false` otherwise.
+    /// In that case, neither the atlas texture nor the atlas layout are
+    /// modified.
     pub fn add_glyph(
         &mut self,
         textures: &mut Assets<Image>,
