@@ -7,7 +7,7 @@ use bevy_ecs::{
     prelude::{Component, DetectChanges},
     query::With,
     reflect::ReflectComponent,
-    system::{Local, Query, Res, ResMut},
+    system::{Commands, Local, Query, Res, ResMut},
     world::{Mut, Ref},
 };
 use bevy_math::Vec2;
@@ -15,7 +15,7 @@ use bevy_reflect::{std_traits::ReflectDefault, Reflect};
 use bevy_render::{camera::Camera, texture::Image};
 use bevy_sprite::TextureAtlasLayout;
 use bevy_text::{
-    scale_value, BreakLineOn, Font, FontAtlasSets, Text, TextError, TextLayoutInfo,
+    scale_value, BreakLineOn, CosmicBuffer, Font, FontAtlasSets, Text, TextError, TextLayoutInfo,
     TextMeasureInfo, TextPipeline, YAxisOrientation,
 };
 use bevy_utils::Entry;
@@ -196,6 +196,7 @@ fn queue_text(
     node: Ref<Node>,
     mut text_flags: Mut<TextFlags>,
     mut text_layout_info: Mut<TextLayoutInfo>,
+    buffer: &mut CosmicBuffer,
 ) {
     // Skip the text node if it is waiting for a new measure func
     if !text_flags.needs_new_measure_func {
@@ -221,6 +222,7 @@ fn queue_text(
             texture_atlases,
             textures,
             YAxisOrientation::TopToBottom,
+            buffer,
         ) {
             Err(TextError::NoSuchFont) => {
                 // There was an error processing the text layout, try again next frame
@@ -253,6 +255,7 @@ fn queue_text(
 /// It does not modify or observe existing ones. The exception is when adding new glyphs to a [`bevy_text::FontAtlas`].
 #[allow(clippy::too_many_arguments)]
 pub fn text_system(
+    mut commands: Commands,
     mut textures: ResMut<Assets<Image>>,
     mut last_scale_factors: Local<EntityHashMap<f32>>,
     fonts: Res<Assets<Font>>,
@@ -263,16 +266,20 @@ pub fn text_system(
     mut font_atlas_sets: ResMut<FontAtlasSets>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut text_query: Query<(
+        Entity,
         Ref<Node>,
         &Text,
         &mut TextLayoutInfo,
         &mut TextFlags,
         Option<&TargetCamera>,
+        Option<&mut CosmicBuffer>,
     )>,
 ) {
     let mut scale_factors: EntityHashMap<f32> = EntityHashMap::default();
 
-    for (node, text, text_layout_info, text_flags, camera) in &mut text_query {
+    for (text_entity, node, text, text_layout_info, text_flags, camera, buffer_opt) in
+        &mut text_query
+    {
         let Some(camera_entity) = camera.map(TargetCamera::entity).or(default_ui_camera.get())
         else {
             continue;
@@ -294,6 +301,18 @@ pub fn text_system(
             || node.is_changed()
             || text_flags.needs_recompute
         {
+            // Not today, borrow checker.
+            let mut cached_buffer = None;
+            let mut new_buffer_opt = None;
+
+            // If we don't have a buffer, create one
+            match buffer_opt {
+                Some(b) => cached_buffer = Some(b),
+                None => {
+                    new_buffer_opt = Some(CosmicBuffer::default());
+                }
+            };
+
             queue_text(
                 &fonts,
                 &mut text_pipeline,
@@ -306,7 +325,16 @@ pub fn text_system(
                 node,
                 text_flags,
                 text_layout_info,
+                // Dodge the borrow checker / skill issue (same thing)
+                cached_buffer
+                    .as_deref_mut()
+                    .unwrap_or_else(|| new_buffer_opt.as_mut().expect("Missing buffer")),
             );
+
+            // Add our new buffer to the entity
+            if let Some(b) = new_buffer_opt {
+                commands.entity(text_entity).insert(b);
+            };
         }
     }
     *last_scale_factors = scale_factors;
