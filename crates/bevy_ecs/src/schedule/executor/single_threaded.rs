@@ -148,7 +148,15 @@ impl SingleThreadedExecutor {
     fn apply_deferred(&mut self, schedule: &mut SystemSchedule, world: &mut World) {
         for system_index in self.unapplied_systems.ones() {
             let system = &mut schedule.systems[system_index];
-            system.apply_deferred(world);
+            let res = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                system.apply_deferred(world);
+            }));
+            if let Err(_payload) = res {
+                eprintln!(
+                    "Encountered a panic when applying buffers for system `{}`!",
+                    &*system.name()
+                );
+            }
         }
 
         self.unapplied_systems.clear();
